@@ -189,7 +189,3 @@ Una vez que el archivo `requirements.txt` está correctamente configurado, Rende
 En este video tutorial, podrán encontrar una descripción paso a paso de cómo utilizar la aplicación, las principales funcionalidades que ofrece y cómo aprovechar al máximo sus características.
 
 <a href="https://youtu.be/vhlR6XJjDKM" target="_blank">Video de Demostración</a>
-
----
-
-![Texto Alternativo](https://blog.soyhenry.com/content/images/size/w1000/2022/04/Data2_logo.png)

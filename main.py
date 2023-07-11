@@ -9,7 +9,7 @@ app = FastAPI(title='PROYECTO INDIVIDUAL 01 - Machine Learning Operations (MLOps
             description='API de datos y recomendaciones de películas basado en machine learning')
 
 df = pd.read_csv('API_movies_dataset.csv')
-df_movies = pd.read_csv('ML_movies.csv')
+ML_data = pd.read_csv('ML_data.csv')
 
 @app.get('/')
 async def index():
@@ -91,19 +91,20 @@ def productoras_exitosas(productora):
 def movie_recommendation(movie_title):
 
     movie_title = movie_title.lower()
+
     # Buscar la película por título en la columna 'title'
-    movie = df_movies[df_movies['title'].str.lower() == movie_title]
+    movie = ML_data[ML_data['title'].str.lower() == movie_title]
 
     if len(movie) == 0:
         return "La película no se encuentra en la base de datos."
 
     # Obtener el género y la popularidad de la película
-    movie_genre = movie['genre_names'].values[0]
+    movie_genre = movie['genero'].values[0]
     movie_popularity = movie['popularity'].values[0]
 
     # Crear una matriz de características para el modelo de vecinos más cercanos
-    features = df_movies[['popularity']]
-    genres = df_movies['genre_names'].str.get_dummies(sep=' ')
+    features = ML_data[['popularity']]
+    genres = ML_data['genero'].str.get_dummies(sep=' ')
     features = pd.concat([features, genres], axis=1)
 
     # Manejar valores faltantes (NaN) reemplazándolos por ceros
@@ -117,12 +118,12 @@ def movie_recommendation(movie_title):
     _, indices = nn_model.kneighbors([[movie_popularity] + [0] * len(genres.columns)], n_neighbors=6)
 
     # Obtener los títulos de las películas recomendadas
-    recommendations = df_movies.iloc[indices[0][1:]]['title']
+    recommendations = ML_data.iloc[indices[0][1:]]['title']
 
     return recommendations
 
 @app.get("/recomendacion/{movie_title}", tags=['Machine Learning'])
-def movie_recommendation(movie_title: str):
+def movie_recommendation(movie_title):
     
     recommended_movies = movie_recommendation(movie_title)
     return {"recommended_movies": recommended_movies.tolist()}
