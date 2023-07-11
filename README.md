@@ -180,12 +180,3 @@ Render utiliza el archivo `requirements.txt` para instalar automáticamente las 
 Cada línea del archivo especifica el nombre de una librería seguido de `==` y la versión requerida. Pueden incluirse tantas líneas como sean necesarias para todas las dependencias de la API.
 
 Una vez que el archivo `requirements.txt` está correctamente configurado, Render utilizará esta información para instalar automáticamente las librerías necesarias durante el proceso de despliegue de la API. Esto asegura que todas las dependencias estén disponibles en el entorno de ejecución de la aplicación en Render.
-
-
----
-
-# Video de Demostración
-
-En este video tutorial, podrán encontrar una descripción paso a paso de cómo utilizar la aplicación, las principales funcionalidades que ofrece y cómo aprovechar al máximo sus características.
-
-<a href="https://youtu.be/vhlR6XJjDKM" target="_blank">Video de Demostración</a>
