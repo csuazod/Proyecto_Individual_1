@@ -9,6 +9,7 @@ app = FastAPI(title='PROYECTO INDIVIDUAL 01 - Machine Learning Operations (MLOps
             description='API de datos y recomendaciones de películas basado en machine learning')
 
 df = pd.read_csv('API_movies_dataset.csv')
+df_movies = pd.read_csv('ML_movies.csv')
 
 @app.get('/')
 async def index():
@@ -85,14 +86,13 @@ def productoras_exitosas(productora):
     return {'productora':productora, 'ganancia_total':revenue_prod, 'cantidad':cantidad_pelis_prod}
 
 
-df_movies = pd.read_csv('ML_movies.csv')
-
 # Funcion Machine Learning - "Modelo de K Vecinos mas Cercanos"
 
 def movie_recommendation(movie_title):
 
+    movie_title = movie_title.lower()
     # Buscar la película por título en la columna 'title'
-    movie = df_movies[df_movies['title'] == movie_title]
+    movie = df_movies[df_movies['title'].str.lower() == movie_title]
 
     if len(movie) == 0:
         return "La película no se encuentra en la base de datos."
@@ -123,15 +123,6 @@ def movie_recommendation(movie_title):
 
 @app.get("/recomendacion/{movie_title}", tags=['Machine Learning'])
 def movie_recommendation(movie_title: str):
-    """
-    Devuelve una lista de las 5 películas recomendadas basadas en una película dada.
-
-    Args:
-        movie_title (str): El título de la película.
-
-    Returns:
-        dict: Un diccionario con las películas recomendadas como una lista.
-    """
-
+    
     recommended_movies = movie_recommendation(movie_title)
     return {"recommended_movies": recommended_movies.tolist()}
