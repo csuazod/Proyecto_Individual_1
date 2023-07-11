@@ -84,9 +84,9 @@ def productoras_exitosas(productora):
 
     return {'productora':productora, 'ganancia_total':revenue_prod, 'cantidad':cantidad_pelis_prod}
 
-df_movies = pd.read_csv('/Datasets/ML_movies.csv')
 
-@app.get('/movie_recommendation/{movie_title}')
+df_movies = pd.read_csv('ML_movies.csv')
+
 # Funcion Machine Learning - "Modelo de K Vecinos mas Cercanos"
 
 def movie_recommendation(movie_title):
@@ -120,3 +120,18 @@ def movie_recommendation(movie_title):
     recommendations = df_movies.iloc[indices[0][1:]]['title']
 
     return recommendations
+
+@app.get("/recomendacion/{movie_title}", tags=['Machine Learning'])
+def movie_recommendation(movie_title: str):
+    """
+    Devuelve una lista de las 5 películas recomendadas basadas en una película dada.
+
+    Args:
+        movie_title (str): El título de la película.
+
+    Returns:
+        dict: Un diccionario con las películas recomendadas como una lista.
+    """
+
+    recommended_movies = movie_recommendation(movie_title)
+    return {"recommended_movies": recommended_movies.tolist()}
