@@ -84,4 +84,39 @@ def productoras_exitosas(productora):
 
     return {'productora':productora, 'ganancia_total':revenue_prod, 'cantidad':cantidad_pelis_prod}
 
+df_movies = pd.read_csv('/Datasets/ML_movies.csv')
 
+@app.get('/movie_recommendation/{movie_title}')
+# Funcion Machine Learning - "Modelo de K Vecinos mas Cercanos"
+
+def movie_recommendation(movie_title):
+
+    # Buscar la película por título en la columna 'title'
+    movie = df_movies[df_movies['title'] == movie_title]
+
+    if len(movie) == 0:
+        return "La película no se encuentra en la base de datos."
+
+    # Obtener el género y la popularidad de la película
+    movie_genre = movie['genre_names'].values[0]
+    movie_popularity = movie['popularity'].values[0]
+
+    # Crear una matriz de características para el modelo de vecinos más cercanos
+    features = df_movies[['popularity']]
+    genres = df_movies['genre_names'].str.get_dummies(sep=' ')
+    features = pd.concat([features, genres], axis=1)
+
+    # Manejar valores faltantes (NaN) reemplazándolos por ceros
+    features = features.fillna(0)
+
+    # Crear el modelo de vecinos más cercanos
+    nn_model = NearestNeighbors(n_neighbors=6, metric='euclidean')
+    nn_model.fit(features)
+
+    # Encontrar las películas más similares
+    _, indices = nn_model.kneighbors([[movie_popularity] + [0] * len(genres.columns)], n_neighbors=6)
+
+    # Obtener los títulos de las películas recomendadas
+    recommendations = df_movies.iloc[indices[0][1:]]['title']
+
+    return recommendations
