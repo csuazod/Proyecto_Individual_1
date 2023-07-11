@@ -4,12 +4,21 @@ import sklearn
 from fastapi import FastAPI
 from sklearn.feature_extraction.text import CountVectorizer 
 from sklearn.neighbors import NearestNeighbors
+import difflib
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 app = FastAPI(title='PROYECTO INDIVIDUAL 01 - Machine Learning Operations (MLOps)',
             description='API de datos y recomendaciones de películas basado en machine learning')
 
 df = pd.read_csv('API_movies_dataset.csv')
-ML_data = pd.read_csv('ML_data.csv')
+
+data= pd.read_csv('Datasets/DEset.csv')
+df_Dset = pd.DataFrame(data)
+df_Dset.drop_duplicates(subset='id',inplace=True)
+
+credits=pd.read_csv('Datasets/credits_filtered.csv')
+df_credits=pd.DataFrame(credits)
 
 @app.get('/')
 async def index():
@@ -88,42 +97,57 @@ def productoras_exitosas(productora):
 
 # Funcion Machine Learning - "Modelo de K Vecinos mas Cercanos"
 
-def movie_recommendation(movie_title):
+ml_data_preliminar= pd.merge(df_Dset, df_credits, on='id')
+ml_data=ml_data_preliminar[ml_data_preliminar['vote_count'] > 250]
 
-    movie_title = movie_title.lower()
+ml_data['cast_filtered'] = ml_data['cast_filtered'].str.replace("[\[\]',]", "").str.strip()
+ml_data['genres_filtered'] = ml_data['genres_filtered'].str.replace("[\[\]',]", "").str.strip()
+ml_data['production_companies_filtered'] = ml_data['production_companies_filtered'].str.replace("[\[\]',]", "").str.strip()
 
-    # Buscar la película por título en la columna 'title'
-    movie = ML_data[ML_data['title'].str.lower() == movie_title]
+selected_features = ['genres_filtered','tagline','cast_filtered','crew_filtered','overview','production_companies_filtered']
 
-    if len(movie) == 0:
-        return "La película no se encuentra en la base de datos."
+for feature in selected_features:
+  ml_data[feature] = ml_data[feature].fillna('')
 
-    # Obtener el género y la popularidad de la película
-    movie_genre = movie['genero'].values[0]
-    movie_popularity = movie['popularity'].values[0]
+combined_features = (ml_data['genres_filtered']+ ' ').str.repeat(25)+ (ml_data['tagline'] + ' ').str.repeat(10) + (ml_data['cast_filtered'] + ' ').str.repeat(20) + (ml_data['crew_filtered']+' ').str.repeat(15)+(ml_data['production_companies_filtered']+' ').str.repeat(20)+(ml_data['overview']).str.repeat(10)
 
-    # Crear una matriz de características para el modelo de vecinos más cercanos
-    features = ML_data[['popularity']]
-    genres = ML_data['genero'].str.get_dummies(sep=' ')
-    features = pd.concat([features, genres], axis=1)
+vectorizer = TfidfVectorizer()
+feature_vectors=vectorizer.fit_transform(combined_features)
 
-    # Manejar valores faltantes (NaN) reemplazándolos por ceros
-    features = features.fillna(0)
+similarity = cosine_similarity(feature_vectors)
+movies_list= ml_data['title'].tolist()
 
-    # Crear el modelo de vecinos más cercanos
-    nn_model = NearestNeighbors(n_neighbors=6, metric='euclidean')
-    nn_model.fit(features)
+@app.get('/recomendacion/{titulo}')
+def recomendacion(titulo:str):
 
-    # Encontrar las películas más similares
-    _, indices = nn_model.kneighbors([[movie_popularity] + [0] * len(genres.columns)], n_neighbors=6)
+    '''Ingresas un nombre de pelicula y te recomienda las similares en una lista'''
+    #Interaction with user
+    movie_name=titulo
+    #Closest match
+    find_close_match = difflib.get_close_matches(movie_name, movies_list)
 
-    # Obtener los títulos de las películas recomendadas
-    recommendations = ML_data.iloc[indices[0][1:]]['title']
+    #Closest match possible in the data
+    close_match = find_close_match[0]
+    id_of_the_movie = ml_data[ml_data.title == close_match]['id'].values[0]
 
-    return recommendations
+    #Obtain the more similar movie
+    similarity_score = list(enumerate(similarity[id_of_the_movie]))
+    sorted_similar_movies = sorted(similarity_score, key = lambda x:x[1], reverse = True) 
 
-@app.get("/recomendacion/{movie_title}", tags=['Machine Learning'])
-def movie_recommendation(movie_title):
+    i = 1
+    recommendation_movies = []
+    added_movies = set()  # Utilizar un conjunto para rastrear las películas agregadas
+
+    for movie in sorted_similar_movies:
+        id = movie[0]
+        filtered_df = ml_data[ml_data['id'] == id]
+        if not filtered_df.empty:
+            title_from_id = filtered_df['title'].values[0]
+        if title_from_id not in added_movies:  # Verificar si la película ya está en la lista
+            recommendation_movies.append(title_from_id)
+            added_movies.add(title_from_id)  # Agregar la película al conjunto de películas agregadas
+            i += 1
+        if i >= 6:
+            break  # Detener el bucle si se han agregado suficientes películas a la lista
     
-    recommended_movies = movie_recommendation(movie_title)
-    return {"recommended_movies": recommended_movies.tolist()}
+    return {'lista recomendada': recommendation_movies}
